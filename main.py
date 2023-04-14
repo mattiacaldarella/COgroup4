@@ -1,4 +1,5 @@
 def ReadInstance():
+	open(instance)
 	print("reading instance... \U0001f44d")
 
 
