@@ -11,8 +11,8 @@ from typing import List
 class Tool:
     id: int
     size: int
+    number_available: int
     cost: int
-    kind: int
 
 @dataclass
 class Request:

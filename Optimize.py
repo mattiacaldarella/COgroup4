@@ -1,17 +1,53 @@
 from collections import defaultdict
+from problem import ProblemData
 
-class Solution():
+
+class Solution:
     def __init__(self):
-        self.routes = defaultdict(list)  # day: list of routes
+        self.routes = defaultdict(list)  # { day: list of routes }
 
-def optimize(problem_data):
+
+def optimize(problem_data: ProblemData):
     solution = Solution()
 
-    for request in problem_data.requests:
-        # Dumb solution where every request gets its own vehicle for delivery and pickup
-        deliver_date = request.first_day
-        return_date = request.first_day + request.days_needed
-        solution.routes[deliver_date].append([0, request.id, 0])
-        solution.routes[return_date].append([0, -request.id, 0])
+    available_tools = {
+        (day, tool.id): tool.number_available
+        for day in range(1, problem_data.days + 1)
+        for tool in problem_data.tools
+    }
 
+    for request in sorted(
+        problem_data.requests, key=lambda request: (request.last_day - request.first_day, -request.days_needed, -request.tools_needed)
+    ):
+        # print(request)
+        days_with_capacity = 0
+        deliver_day = request.first_day
+        check_day = request.first_day
+        while days_with_capacity < request.days_needed + 1:
+            if deliver_day > request.last_day:
+                print(available_tools)
+                raise RuntimeError(f"Request {request} could not be satisfied due to lack of available tools")
+            if available_tools[(check_day, request.tool_kind_id)] < request.tools_needed:
+                days_with_capacity = 0
+                deliver_day = check_day + 1
+            else:
+                days_with_capacity += 1
+            check_day += 1
+        return_day = deliver_day + request.days_needed
+        # Dumb solution where every request gets its own vehicle for delivery and pickup
+        solution.routes[deliver_day].append([0, request.id, 0])
+        solution.routes[return_day].append([0, -request.id, 0])
+        for day in range(deliver_day, return_day+1):
+            available_tools[(day, request.tool_kind_id)] -= request.tools_needed
+
+    # When returning a tool, send it directly to a customer who needs it instead
+    # for day in range(1, problem_data.days+1):
+    #     for route_a in solution.routes[day]:
+    #         for route_b in solution.routes[day]:
+    #             if route_a[1] < 0 and route_b[1] == -route_a[1]:  # and distance
+    #                 solution.routes[day].remove(route_a)
+    #                 solution.routes[day].remove(route_b)
+    #                 solution.routes[day].append([0, route_a[1], route_b[1], 0])
+
+    print(available_tools)
     return solution
