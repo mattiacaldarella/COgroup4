@@ -8,12 +8,12 @@ def vehicle_routing(problem_data: ProblemData):
     n = len(problem_data.coordinates) #number of clients
 
 
-    xc = [problem_data.depot_coordinate] #add depot x-coordinate
-    xc.append(problem_data.coordinates) #vector of x-coordinates
+    xc = [problem_data.depot_coordinate] #add depot x-coordinate, still needs to be only x-coordinate
+    xc.append(problem_data.coordinates) #vector of x-coordinates, see above
 
 
-    yc = [problem_data.depot_coordinate] #add depot x-coordinate
-    yc.append(problem_data.coordinates) #vector of x-coordinates
+    yc = [problem_data.depot_coordinate] #add depot y-coordinate, still needs to be only y-coordinate
+    yc.append(problem_data.coordinates) #vector of y-coordinates, see above
 
 
     # plot of the routing problem
