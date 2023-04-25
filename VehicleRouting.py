@@ -39,7 +39,7 @@ def vehicle_routing(problem_data: ProblemData):
     mdl.setObjective(quicksum(x[a]*c[a] for a in A)) #minimize the sum of all arcs * cost of the arc, for all the arcs in A
 
 
-    # set the constraints
+    # set the constraints, stil need to add more contraints
     mdl.addConstrs(quicksum(x[i,j] for j in V if j!=i)==1 for i in N);
     mdl.addConstrs(quicksum(x[i,j] for i in V if i!=j)==1 for j in N);
     mdl.addConstrs((x[i,j]==1) >> (u[i]+q[i]==u[j]) for i,j in A if i!=0 and j!=0);
