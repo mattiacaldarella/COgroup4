@@ -23,7 +23,7 @@ def vehicle_routing(problem_data: ProblemData):
 
     N = [i for i in range(1, n+1)] #vector of the clients
     V = [0] + N #vector of vertices
-    A = [(i, j) for i in V for j in V if i!=j]#vector of arcs
+    A = [(i, j) for i in V for j in V if i!=j] #vector of arcs
     c = {(i, j): np.hyplot(xc[i]-xc[j], yc[i]-yc[j]) for i,j in A} #Euclidean distance between node i and j
     Q = problem_data.capacity #vehicle capacity
     q = {i: Request.tools_needed} #amount of tools that have to be delivered
@@ -36,7 +36,7 @@ def vehicle_routing(problem_data: ProblemData):
 
 
     mdl.modelSense = GRB.MINIMIZE
-    mdl.setObjective(quicksum(x[a]*c[a] for a in A)) #minimize the sum of all arcs * cost of the arc, for all the arcs in A
+    mdl.setObjective(quicksum(x[a]*c[a]*problem_data.distance_cost for a in A)) #minimize the sum of all arcs * cost of the arc, for all the arcs in A
 
 
     # set the constraints, stil need to add more contraints
