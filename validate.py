@@ -6,7 +6,7 @@ import subprocess
 def validate(file_name):
     """Validates a solution using the Validator script, assuming it's stored under the proper file name"""
 
-    print(f"Validating {file_name}...")
+    print(f"Validating {file_name}...\n")
     # os.system(
     #     f"python3 Validator/Validate.py -i {os.path.join(INSTANCES_DIR, file_name)} -s {os.path.join(SOLUTIONS_DIR, file_name)}"
     # )

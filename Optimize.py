@@ -49,6 +49,6 @@ def optimize(problem_data: ProblemData):
     #                 solution.routes[day].remove(route_a)
     #                 solution.routes[day].remove(route_b)
     #                 solution.routes[day].append([0, route_a[1], route_b[1], 0])
-
+    print("hoi\n")
     print(available_tools)
     return solution
