@@ -103,6 +103,7 @@ def read_instance(instance):
             distance_cost,
             number_of_tool_types,
             tools,
+            number_of_coordinates,
             coordinates,
             requests,
         )

@@ -39,5 +39,6 @@ class ProblemData:
     distance_cost: int
     number_of_tool_types: int
     tools: List[Tool]
+    number_of_coordinates: int
     coordinates: List[List[int]]
     requests: List[Request]
