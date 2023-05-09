@@ -10,6 +10,7 @@ from scipy.spatial import distance_matrix
 from problem import ProblemData
 import matplotlib.pyplot as plt
 from PlotCoordinates import plot_coordinates2
+from itertools import combinations
 
 def optimize2(problem_data: ProblemData):
     dic = day_divider(problem_data)
@@ -65,6 +66,39 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
 
     return routes
 
+def getTour(x, n):
+    """ Gets the tour starting at depot from a list of edges as tuples """
+    tour = [0]
+    i = 0
+    for i in range(n):
+        for j in range(n):
+            if x[i, j].x > 0.5:
+                print(i, j)
+    while len(tour) < n:
+        for j in range(n):
+            if x[i, j].x > 0.5:
+                tour.append(j)
+                i = j
+                print(tour)
+                break
+    print(tour)
+    return tour
+
+def subtourelimclosure(x, n):
+    """Closure of subtourelim with the tuple dict x of the variables"""
+
+    def subtourelim(model, where):
+        if where == GRB.Callback.MIPSOL:
+            # make a list of edges selected in the solution
+            tour = getTour(x, n)
+            if len(tour) < n:
+                # add subtour elimination constr. for every pair of cities in subtour
+                print(f"adding subtour elimination constraint for tour {tour}")
+                model.cbLazy(gp.quicksum(x[i, j] for i, j in combinations(tour, 2))
+                            <= len(tour)-1)
+
+    return subtourelim
+
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
     m = gp.Model()
     # Create a boolean mask to select the relevant rows and columns
@@ -84,20 +118,16 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
     m.addConstrs(gp.quicksum(x[i, j] for j in range(n) if i != j) == 1 for i in range(n))
     m.addConstrs(gp.quicksum(x[i, j] for i in range(n) if i != j) == 1 for j in range(n))
     m.addConstr(gp.quicksum(x[i, j] * reduced_dist_matrix[i][j] for i in range(n) for j in range(n) if i != j) <= problem_data.max_trip_distance)
-    m.optimize()
+    m.optimize(subtourelimclosure(x, n))
 
     if m.status == GRB.OPTIMAL:
         print(f"Optimal objective value: {m.objVal:.2f}")
         print("Optimal tour:")
         tour = [0]
         i = 0
-        while len(tour) < n:
-            for j in range(n):
-                if x[i, j].x > 0.5 and j not in tour:
-                    tour.append(j)
-                    i = j
-                    break
-        print(tour)
+        vars = m.getVars()
+        print(vars)
+        tour = getTour(x, n)
         return True, tour
     else:
         return False, None
