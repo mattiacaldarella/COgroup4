@@ -10,8 +10,7 @@ def optimize2(problem_data: ProblemData):
 
     for j in sorted(dic.keys()):
         print(sweep_method(theta, dic[j], problem_data, dist_matrix))
-        lst = [1,1,1, 3,1,6 ,5, 7, 8, 8]
-        exit()
+        #exit()
 
 def day_divider(problem_data: ProblemData):
     dic = {}
@@ -39,24 +38,19 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
         route = []
 
         while capacity >= next_request_cap and i < len(sort):
-            print(i)
             route.append(sort[i].location_id)
             capacity -= next_request_cap
             next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
             i += 1
 
         route.append(0)
-        #removes_multiples_but_remembers()
         test, rout = gurobi(route, problem_data, dist_matrix)
-        #add_multiples_()
 
         while test == False:
             route.remove(0)
             del route[-1]
             route.append(0)
-            # removes_multiples_but_remembers()
             test, rout = gurobi(route, problem_data, dist_matrix)
-            # add_multiples_()
             i -= 1
 
         routes.append(rout)
@@ -64,6 +58,12 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
     return routes
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
+    route, dup_dic = give_duplicates(route)
+
+
+    if len(dup_dic) != 0:
+        print(dup_dic)
+
     m = gp.Model('TSP')
 
     # set the model parameters to prevent output to the console
@@ -108,7 +108,11 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
                     tour_order.append(j)
                     i = j
                     break
+
         tour = [route[i] for i in tour_order]
+        ind = tour.index(0)
+        tour = tour[ind:] + tour[:ind]
+        tour.append(0)
 
         return True, tour
     else:
@@ -116,17 +120,18 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
         return False, None
 
 def give_duplicates(lst: list):
-    #remember how much
     new = []
-    dub = []
+    dub = {}
 
     for i in lst:
         if i not in new:
             new.append(i)
+        elif i in dub.keys():
+            dub[i] += 1
         elif i not in dub:
-            dub.append(i)
+            dub[i] = 1
 
-    return dub
+    return new, dub
 
 def distance_matrix1(problem_data: ProblemData):
     x = problem_data.coordinates[:, 1]
@@ -154,7 +159,7 @@ def polar_order(problem_data: ProblemData):
     y_cent = problem_data.coordinates[:, 2] - problem_data.coordinates[problem_data.depot_coordinate, 2]
 
     theta = np.where(x_cent == 0, 0, np.arctan2(y_cent, x_cent))
-    theta = np.delete(theta, np.where(theta == 0)) #wrong
+    #theta = np.delete(theta, np.where(theta == 0)) #wrong
     r = np.sqrt(np.power(x_cent, 2)+np.power(y_cent, 2))
     r = np.delete(r, np.where(r == 0)) #wrong
 
