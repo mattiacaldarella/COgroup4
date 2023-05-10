@@ -1,15 +1,7 @@
-import math
-
 import gurobipy as gp
 from gurobipy import GRB
-
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score
-from scipy.spatial import distance_matrix
 from problem import ProblemData
-import matplotlib.pyplot as plt
-from PlotCoordinates import plot_coordinates2
 
 def optimize2(problem_data: ProblemData):
     dic = day_divider(problem_data)
@@ -18,6 +10,7 @@ def optimize2(problem_data: ProblemData):
 
     for j in sorted(dic.keys()):
         print(sweep_method(theta, dic[j], problem_data, dist_matrix))
+        lst = [1,1,1, 3,1,6 ,5, 7, 8, 8]
         exit()
 
 def day_divider(problem_data: ProblemData):
@@ -44,7 +37,8 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
         next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
         capacity = problem_data.capacity
         route = []
-        while capacity >= next_request_cap:
+
+        while capacity >= next_request_cap and i < len(sort):
             print(i)
             route.append(sort[i].location_id)
             capacity -= next_request_cap
@@ -52,13 +46,17 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
             i += 1
 
         route.append(0)
+        #removes_multiples_but_remembers()
         test, rout = gurobi(route, problem_data, dist_matrix)
+        #add_multiples_()
 
         while test == False:
-            route = np.delete(route, np.where(r == 0)) #wrong
+            route.remove(0)
             del route[-1]
             route.append(0)
-            test, rout = gurobi(route, dist_matrix)
+            # removes_multiples_but_remembers()
+            test, rout = gurobi(route, problem_data, dist_matrix)
+            # add_multiples_()
             i -= 1
 
         routes.append(rout)
@@ -66,7 +64,11 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
     return routes
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
-    m = gp.Model()
+    m = gp.Model('TSP')
+
+    # set the model parameters to prevent output to the console
+    m.setParam('OutputFlag', 0)
+
     # Create a boolean mask to select the relevant rows and columns
     mask = np.zeros(dist_matrix.shape, dtype=bool)
     mask[np.ix_(route, route)] = True
@@ -84,23 +86,47 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
     m.addConstrs(gp.quicksum(x[i, j] for j in range(n) if i != j) == 1 for i in range(n)) #every row is visit once
     m.addConstrs(gp.quicksum(x[i, j] for i in range(n) if i != j) == 1 for j in range(n)) #every column is visit once
     m.addConstr(gp.quicksum(x[i, j] * reduced_dist_matrix[i][j] for i in range(n) for j in range(n) if i != j) <= problem_data.max_trip_distance) #max trip distance
+
+    # add the subtour elimination constraints
+    u = m.addVars(n, vtype=GRB.CONTINUOUS, lb=0.0, name='u')
+    for i in range(1, n):
+        for j in range(1, n):
+            if i != j:
+                m.addConstr(u[i] - u[j] + n * x[i, j] <= n - 1)
+
     m.optimize()
 
+    # Print the tour_order if an optimal solution is found
     if m.status == GRB.OPTIMAL:
-        print(f"Optimal objective value: {m.objVal:.2f}")
-        print("Optimal tour:")
-        tour = [0]
+        #print(f"Optimal objective value: {m.objVal:.2f}")
+        #print("Optimal tour_order:")
+        tour_order = [0]
         i = 0
-        while len(tour) < n:
+        while len(tour_order) < n:
             for j in range(n):
-                if x[i, j].x > 0.5 and j not in tour:
-                    tour.append(j)
+                if x[i, j].x > 0.5 and j not in tour_order:
+                    tour_order.append(j)
                     i = j
                     break
-        print(tour)
+        tour = [route[i] for i in tour_order]
+
         return True, tour
     else:
+        #print("No solution found.")
         return False, None
+
+def give_duplicates(lst: list):
+    #remember how much
+    new = []
+    dub = []
+
+    for i in lst:
+        if i not in new:
+            new.append(i)
+        elif i not in dub:
+            dub.append(i)
+
+    return dub
 
 def distance_matrix1(problem_data: ProblemData):
     x = problem_data.coordinates[:, 1]
@@ -115,12 +141,6 @@ def distance_matrix1(problem_data: ProblemData):
                 (points[i][0] - points[j][0]) ** 2 + (points[i][1] - points[j][1]) ** 2))
 
     return dist_matrix
-
-    '''
-    print(type(matrix))
-    print(distance_matrix(matrix, matrix))
-    print(abs(matrix.T - matrix))
-    '''
 
 def sort_request(theta: list, lst: list):
     theta1 = theta[[i.location_id for i in lst]]
@@ -139,39 +159,3 @@ def polar_order(problem_data: ProblemData):
     r = np.delete(r, np.where(r == 0)) #wrong
 
     return theta, r
-
-'''
-def cluster(lst: list, problemData: ProblemData):
-    coordinates = []
-    for i in lst:
-        coordinate = problemData.coordinates[i.id, :]
-        coordinates.append(coordinate)
-
-    coordinates1 = np.array(coordinates)[:, 1:]
-    print(coordinates1)
-
-    scores = []
-    models = []
-    for k in range(2, 10):
-        model = KMeans(n_clusters=k, n_init=10, random_state=0)
-        labels = model.fit_predict(coordinates1)
-        score = silhouette_score(coordinates1, labels)
-        models.append(model)
-        scores.append(score)
-
-    optimal_k = 2 + scores.index(max(scores))
-    print(optimal_k)
-    optimal_model = models[scores.index(max(scores))]
-    print(optimal_model.labels_)
-
-    fig, ax = plt.subplots()
-    ax.scatter(coordinates1[:,0], coordinates1[:,1])
-    for i, label in enumerate(optimal_model.labels_):
-        ax.annotate(label, (coordinates1[i,0], coordinates1[i,1]))
-    plt.show()
-
-def distance_matrix1(matrix: numpy.ndarray):
-    print(type(matrix))
-    print(distance_matrix(matrix, matrix))
-    print(abs(matrix.T - matrix))
-'''
