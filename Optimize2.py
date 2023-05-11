@@ -2,64 +2,113 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from problem import ProblemData
+from DayRoutes import day_divider1, day_divider
+
+class Solution:
+    def __init__(self):
+        self.routes = defaultdict(list)  # { day: list of routes }
 
 def optimize2(problem_data: ProblemData):
-    dic = day_divider(problem_data)
-    theta, r = polar_order(problem_data)
+    #dic_request = day_divider(problem_data)
+    tot_dic = {}
+
+    dic_request, dic_pickup = day_divider1(problem_data)
+    theta = polar_order(problem_data) #, r
     dist_matrix = distance_matrix1(problem_data)
+    available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
+    print(available_tools)
+    newlist = list(dic_request.keys()) + list(dic_request.keys())
+    unique_lst = list(set(newlist))
 
-    for j in sorted(dic.keys()):
-        print(sweep_method(theta, dic[j], problem_data, dist_matrix))
-        #exit()
+    for j in sorted(unique_lst):
+        available_count_re = {}
+        available_count_pi = {}
+        tot_routes = []
 
-def day_divider(problem_data: ProblemData):
-    dic = {}
-    for request in problem_data.requests:
-        fd = request.first_day
-        if fd in dic.keys():
-            dic[fd].append(request)
-        else:
-            dic[fd] = [request]
-    return dic
+        if j in dic_request.keys():
+            tot_route_request, available_count_re = sweep_method(theta, dic_request[j], problem_data, dist_matrix, 1)
+            tot_routes += tot_route_request
+        if j in dic_pickup.keys():
+            tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, -1)
 
-def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray):
+            tot_routes += tot_route_pickup
+
+        tot_dic[j] = tot_routes
+
+        available_tools = {key: value + available_count_re.get(key, 0) + available_count_pi.get(key, 0) for key, value in available_tools.items()}
+        print(j)
+        print(available_count_re)
+        print(available_count_pi)
+        print(available_tools)
+
+    return tot_dic
+
+def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: int):
     sort = sort_request(theta, lst)
-
     routes = []
-
-    # create a dictionary mapping tool IDs to their sizes
+    i = 0
     tool_sizes = {tool.id: tool.size for tool in problem_data.tools}
 
-    i = 0
-
     while i < len(sort):
-        next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
-        capacity = problem_data.capacity
-        route = []
-
-        while capacity >= next_request_cap and i < len(sort):
-            route.append(sort[i].location_id)
-            capacity -= next_request_cap
-            next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
-            i += 1
-
+        i, route, available_tools = request_vs_pickup(i, sort, tool_sizes, problem_data, sgn)
         route.append(0)
         test, rout = gurobi(route, problem_data, dist_matrix)
 
         while test == False:
             route.remove(0)
+
+            if sgn == 1:
+                available_tools[sort[i].tool_kind_id] -= 1
+            else:
+                available_tools[sort[i].tool_kind_id] += 1
+
             del route[-1]
             route.append(0)
             test, rout = gurobi(route, problem_data, dist_matrix)
+
             i -= 1
+
+        if sgn == -1:
+            for j in range(len(rout)):
+                rout[j] *= sgn
 
         routes.append(rout)
 
-    return routes
+    return routes, available_tools
+
+def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemData, sgn: int):
+    next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+    capacity = problem_data.capacity
+    packed_cap = 0
+    route = []
+    available_tools = {tool.id: 0 for tool in problem_data.tools}
+
+    if sgn == 1:
+        while capacity >= next_request_cap and i < len(sort):
+            route.append(sort[i].location_id)
+            capacity -= next_request_cap
+            available_tools[sort[i].tool_kind_id] -= 1
+
+            i += 1
+            if i >= len(sort):
+                break
+            next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+    else:
+        while capacity >= packed_cap and i < len(sort):
+            route.append(sort[i].location_id)
+            packed_cap += next_request_cap
+
+            available_tools[sort[i].tool_kind_id] += 1
+
+            i += 1
+            if i >= len(sort):
+                break
+            next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+
+    return i, route, available_tools
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
     route, dup_dic = give_duplicates(route)
-
 
     if len(dup_dic) != 0:
         print(dup_dic)
@@ -99,7 +148,6 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
     # Print the tour_order if an optimal solution is found
     if m.status == GRB.OPTIMAL:
         #print(f"Optimal objective value: {m.objVal:.2f}")
-        #print("Optimal tour_order:")
         tour_order = [0]
         i = 0
         while len(tour_order) < n:
@@ -116,7 +164,6 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
 
         return True, tour
     else:
-        #print("No solution found.")
         return False, None
 
 def give_duplicates(lst: list):
@@ -159,8 +206,8 @@ def polar_order(problem_data: ProblemData):
     y_cent = problem_data.coordinates[:, 2] - problem_data.coordinates[problem_data.depot_coordinate, 2]
 
     theta = np.where(x_cent == 0, 0, np.arctan2(y_cent, x_cent))
-    #theta = np.delete(theta, np.where(theta == 0)) #wrong
-    r = np.sqrt(np.power(x_cent, 2)+np.power(y_cent, 2))
-    r = np.delete(r, np.where(r == 0)) #wrong
+    # before another
+    #r = np.sqrt(np.power(x_cent, 2)+np.power(y_cent, 2))
+    #r = np.delete(r, np.where(r == 0)) #wrong
 
-    return theta, r
+    return theta #, r

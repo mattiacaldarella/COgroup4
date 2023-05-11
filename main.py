@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
         print(problem_data)
 
-        optimize2(problem_data)
+        print(optimize2(problem_data))
         exit()
 
 
