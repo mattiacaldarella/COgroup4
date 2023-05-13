@@ -9,14 +9,13 @@ class Solution:
         self.routes = defaultdict(list)  # { day: list of routes }
 
 def optimize2(problem_data: ProblemData):
-    #dic_request = day_divider(problem_data)
     tot_dic = {}
 
     dic_request, dic_pickup = day_divider1(problem_data)
     theta = polar_order(problem_data) #, r
     dist_matrix = distance_matrix1(problem_data)
     available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
-    print(available_tools)
+    #print(available_tools)
     newlist = list(dic_request.keys()) + list(dic_request.keys())
     unique_lst = list(set(newlist))
 
@@ -26,24 +25,24 @@ def optimize2(problem_data: ProblemData):
         tot_routes = []
 
         if j in dic_request.keys():
-            tot_route_request, available_count_re = sweep_method(theta, dic_request[j], problem_data, dist_matrix, 1)
+            tot_route_request, available_count_re = sweep_method(theta, dic_request[j], problem_data, dist_matrix, True)
             tot_routes += tot_route_request
         if j in dic_pickup.keys():
-            tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, -1)
+            tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
 
             tot_routes += tot_route_pickup
 
         tot_dic[j] = tot_routes
 
         available_tools = {key: value + available_count_re.get(key, 0) + available_count_pi.get(key, 0) for key, value in available_tools.items()}
-        print(j)
-        print(available_count_re)
-        print(available_count_pi)
-        print(available_tools)
+        #print(j)
+        #print(available_count_re)
+        #print(available_count_pi)
+        #print(available_tools)
 
     return tot_dic
 
-def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: int):
+def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: bool):
     sort = sort_request(theta, lst)
     routes = []
     i = 0
@@ -51,41 +50,36 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
 
     while i < len(sort):
         i, route, available_tools = request_vs_pickup(i, sort, tool_sizes, problem_data, sgn)
-        route.append(0)
         test, rout = gurobi(route, problem_data, dist_matrix)
 
         while test == False:
-            route.remove(0)
-
-            if sgn == 1:
-                available_tools[sort[i].tool_kind_id] -= 1
+            if sgn == True:
+                available_tools[sort[i-1].tool_kind_id] -= 1 #check this
             else:
-                available_tools[sort[i].tool_kind_id] += 1
+                available_tools[sort[i-1].tool_kind_id] += 1
 
             del route[-1]
-            route.append(0)
             test, rout = gurobi(route, problem_data, dist_matrix)
 
             i -= 1
 
-        if sgn == -1:
+        if sgn == False:
             for j in range(len(rout)):
-                rout[j] *= sgn
+                rout[j] *= -1
 
         routes.append(rout)
-
     return routes, available_tools
 
-def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemData, sgn: int):
+def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemData, sgn: bool):
     next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
     capacity = problem_data.capacity
     packed_cap = 0
     route = []
     available_tools = {tool.id: 0 for tool in problem_data.tools}
 
-    if sgn == 1:
+    if sgn == True:
         while capacity >= next_request_cap and i < len(sort):
-            route.append(sort[i].location_id)
+            route.append(sort[i])
             capacity -= next_request_cap
             available_tools[sort[i].tool_kind_id] -= 1
 
@@ -95,7 +89,7 @@ def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: Proble
             next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
     else:
         while capacity >= packed_cap and i < len(sort):
-            route.append(sort[i].location_id)
+            route.append(sort[i])
             packed_cap += next_request_cap
 
             available_tools[sort[i].tool_kind_id] += 1
@@ -104,14 +98,10 @@ def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: Proble
             if i >= len(sort):
                 break
             next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
-
     return i, route, available_tools
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
-    route, dup_dic = give_duplicates(route)
-
-    if len(dup_dic) != 0:
-        print(dup_dic)
+    route_id_list, dup_dic = give_duplicates(route)
 
     m = gp.Model('TSP')
 
@@ -120,12 +110,12 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
 
     # Create a boolean mask to select the relevant rows and columns
     mask = np.zeros(dist_matrix.shape, dtype=bool)
-    mask[np.ix_(route, route)] = True
+    mask[np.ix_(route_id_list, route_id_list)] = True
 
     # Use the mask to select the relevant distances
-    reduced_dist_matrix = dist_matrix[mask].reshape(len(route), len(route))
+    reduced_dist_matrix = dist_matrix[mask].reshape(len(route_id_list), len(route_id_list))
 
-    n = len(route)
+    n = len(route_id_list)
     x = m.addVars(n, n, vtype=gp.GRB.BINARY, name='x')
     smaller = 10000
 
@@ -157,27 +147,52 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
                     i = j
                     break
 
-        tour = [route[i] for i in tour_order]
-        ind = tour.index(0)
-        tour = tour[ind:] + tour[:ind]
-        tour.append(0)
+        finish = compiler(tour_order, route)
 
-        return True, tour
+        return True, finish
     else:
         return False, None
+
+def compiler(tour_order: list, route: list):
+    tour_order.remove(0)
+
+    dub = {}
+    for i in route:
+        if i.location_id in dub.keys():
+            dub[i.location_id].append(i)
+        else:
+            dub[i.location_id] = [i]
+
+    n = len(dub.keys())
+    new_dub = {}
+    for i, key in enumerate(dub.keys()):
+        new_dub[i] = dub[key]
+
+    mooi = [0] * (n)
+
+    for i in tour_order:
+        mooi[i - 1] = new_dub.get(i - 1)
+
+    flat_list = [x for sublist in mooi for x in sublist]
+    plst = []
+
+    for x in flat_list:
+        plst.append(x.id)
+
+    finish = [0] + plst + [0]
+    return finish
 
 def give_duplicates(lst: list):
     new = []
     dub = {}
-
     for i in lst:
-        if i not in new:
-            new.append(i)
-        elif i in dub.keys():
-            dub[i] += 1
-        elif i not in dub:
-            dub[i] = 1
-
+        if i.location_id not in new:
+            new.append(i.location_id)
+        elif i.location_id in dub.keys():
+            dub[new.index(i.location_id)].append(i)
+        else:
+            dub[new.index(i.location_id)] = [i]
+    new.append(0)
     return new, dub
 
 def distance_matrix1(problem_data: ProblemData):
