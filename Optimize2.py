@@ -3,19 +3,19 @@ from gurobipy import GRB
 import numpy as np
 from problem import ProblemData
 from DayRoutes import day_divider1, day_divider
+from collections import defaultdict
 
 class Solution:
     def __init__(self):
         self.routes = defaultdict(list)  # { day: list of routes }
 
 def optimize2(problem_data: ProblemData):
-    tot_dic = {}
+    solution = Solution()
 
     dic_request, dic_pickup = day_divider1(problem_data)
     theta = polar_order(problem_data) #, r
     dist_matrix = distance_matrix1(problem_data)
     available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
-    #print(available_tools)
     newlist = list(dic_request.keys()) + list(dic_request.keys())
     unique_lst = list(set(newlist))
 
@@ -31,16 +31,12 @@ def optimize2(problem_data: ProblemData):
             tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
 
             tot_routes += tot_route_pickup
-
-        tot_dic[j] = tot_routes
+        print(j)
+        solution.routes[j] = tot_routes
 
         available_tools = {key: value + available_count_re.get(key, 0) + available_count_pi.get(key, 0) for key, value in available_tools.items()}
-        #print(j)
-        #print(available_count_re)
-        #print(available_count_pi)
-        #print(available_tools)
 
-    return tot_dic
+    return solution
 
 def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: bool):
     sort = sort_request(theta, lst)
@@ -52,11 +48,12 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
         i, route, available_tools = request_vs_pickup(i, sort, tool_sizes, problem_data, sgn)
         test, rout = gurobi(route, problem_data, dist_matrix)
 
+        #exit()
         while test == False:
             if sgn == True:
-                available_tools[sort[i-1].tool_kind_id] -= 1 #check this
+                available_tools[sort[i-1].tool_kind_id] += 1 #check this
             else:
-                available_tools[sort[i-1].tool_kind_id] += 1
+                available_tools[sort[i-1].tool_kind_id] -= 1
 
             del route[-1]
             test, rout = gurobi(route, problem_data, dist_matrix)
@@ -71,33 +68,27 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
     return routes, available_tools
 
 def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemData, sgn: bool):
-    next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
-    capacity = problem_data.capacity
-    packed_cap = 0
-    route = []
+    fill = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
     available_tools = {tool.id: 0 for tool in problem_data.tools}
+    cap = []
+    route = []
 
-    if sgn == True:
-        while capacity >= next_request_cap and i < len(sort):
-            route.append(sort[i])
-            capacity -= next_request_cap
+    while problem_data.capacity >= fill and i < len(sort):
+        cap.append(fill)
+        route.append(sort[i])
+        fill += tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+
+        if sgn == True:
             available_tools[sort[i].tool_kind_id] -= 1
-
-            i += 1
-            if i >= len(sort):
-                break
-            next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
-    else:
-        while capacity >= packed_cap and i < len(sort):
-            route.append(sort[i])
-            packed_cap += next_request_cap
-
+        else:
             available_tools[sort[i].tool_kind_id] += 1
 
-            i += 1
-            if i >= len(sort):
-                break
-            next_request_cap = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+        i += 1
+        if i >= len(sort):
+            break
+
+        fill += tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+
     return i, route, available_tools
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
@@ -135,6 +126,8 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
 
     m.optimize()
 
+    maxdis = 0
+
     # Print the tour_order if an optimal solution is found
     if m.status == GRB.OPTIMAL:
         #print(f"Optimal objective value: {m.objVal:.2f}")
@@ -144,11 +137,14 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
             for j in range(n):
                 if x[i, j].x > 0.5 and j not in tour_order:
                     tour_order.append(j)
+                    maxdis += x[i, j].x * reduced_dist_matrix[i][j]
                     i = j
                     break
 
         finish = compiler(tour_order, route)
 
+        if maxdis > problem_data.max_trip_distance:
+            print('no', maxdis)
         return True, finish
     else:
         return False, None
@@ -168,7 +164,7 @@ def compiler(tour_order: list, route: list):
     for i, key in enumerate(dub.keys()):
         new_dub[i] = dub[key]
 
-    mooi = [0] * (n)
+    mooi = [0] * n
 
     for i in tour_order:
         mooi[i - 1] = new_dub.get(i - 1)
