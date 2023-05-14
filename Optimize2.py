@@ -31,7 +31,7 @@ def optimize2(problem_data: ProblemData):
             tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
 
             tot_routes += tot_route_pickup
-        print(j)
+        #print(j)
         solution.routes[j] = tot_routes
 
         available_tools = {key: value + available_count_re.get(key, 0) + available_count_pi.get(key, 0) for key, value in available_tools.items()}
@@ -164,12 +164,12 @@ def compiler(tour_order: list, route: list):
     for i, key in enumerate(dub.keys()):
         new_dub[i] = dub[key]
 
-    mooi = [0] * n
+    defaultlist = [0] * n
 
     for i in tour_order:
-        mooi[i - 1] = new_dub.get(i - 1)
+        defaultlist[i - 1] = new_dub.get(i - 1)
 
-    flat_list = [x for sublist in mooi for x in sublist]
+    flat_list = [x for sublist in defaultlist for x in sublist]
     plst = []
 
     for x in flat_list:
