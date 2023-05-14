@@ -16,7 +16,8 @@ def optimize2(problem_data: ProblemData):
     theta = polar_order(problem_data) #, r
     dist_matrix = distance_matrix1(problem_data)
     available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
-    newlist = list(dic_request.keys()) + list(dic_request.keys())
+    #print(available_tools)
+    newlist = list(dic_request.keys()) + list(dic_pickup.keys())
     unique_lst = list(set(newlist))
 
     for j in sorted(unique_lst):
@@ -29,12 +30,16 @@ def optimize2(problem_data: ProblemData):
             tot_routes += tot_route_request
         if j in dic_pickup.keys():
             tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
-
             tot_routes += tot_route_pickup
-        #print(j)
+
         solution.routes[j] = tot_routes
 
         available_tools = {key: value + available_count_re.get(key, 0) + available_count_pi.get(key, 0) for key, value in available_tools.items()}
+        #print(j)
+        #print(available_count_re)
+        #print(available_count_pi)
+        #print(available_tools)
+
 
     return solution
 
