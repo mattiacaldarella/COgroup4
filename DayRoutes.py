@@ -1,6 +1,12 @@
 import numpy as np
 from problem import ProblemData
 
+def day_divider2(problem_data: ProblemData):
+    for request in sorted(problem_data.requests, key=lambda request: (-request.days_needed + heuristic_weight * request.last_day - request.first_day)):
+
+
+    return dic_request, dic_pickup
+
 def day_divider1(problem_data: ProblemData):
     dic_request = {}
     dic_pickup = {}

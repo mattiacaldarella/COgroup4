@@ -14,10 +14,9 @@ def optimize2(problem_data: ProblemData):
 
     dic_request, dic_pickup = day_divider1(problem_data)
     theta = polar_order(problem_data)
-
     dist_matrix = distance_matrix1(problem_data)
-    available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
 
+    available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
     for j in sorted(list(set(dic_request) | set(dic_pickup))):
         available_count_re = {}
         available_count_pi = {}
@@ -197,7 +196,7 @@ def polar_order(problem_data: ProblemData):
     x_cent = problem_data.coordinates[:, 1] - problem_data.coordinates[problem_data.depot_coordinate, 1]
     y_cent = problem_data.coordinates[:, 2] - problem_data.coordinates[problem_data.depot_coordinate, 2]
 
-    theta = np.where(x_cent == 0, 0, np.arctan2(y_cent, x_cent))
+    theta = np.where(x_cent == 0, 0, np.arctan2(y_cent, x_cent)) #x=0 does not mean y=0
     # before another
     #r = np.sqrt(np.power(x_cent, 2)+np.power(y_cent, 2))
     #r = np.delete(r, np.where(r == 0)) #wrong
