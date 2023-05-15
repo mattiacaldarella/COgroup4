@@ -20,5 +20,7 @@ def validate(file_name):
             os.path.join(SOLUTIONS_DIR, file_name),
         ]
     )
-    print(result)
+
+    result_string = result.decode('utf-8')
+    print(result_string)
     return "correct" in str(result)
