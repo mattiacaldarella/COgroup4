@@ -16,36 +16,17 @@ def optimize2(problem_data: ProblemData):
     theta = polar_order(problem_data)
     dist_matrix = distance_matrix1(problem_data)
 
-    #exit()
-
-    available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
     for j in sorted(list(set(dic_request) | set(dic_pickup))):
-        available_count_re = {}
-        available_count_pi = {}
         tot_routes = []
 
         if j in dic_request.keys():
-            tot_route_request, available_count_re = sweep_method(theta, dic_request[j], problem_data, dist_matrix, True)
+            tot_route_request = sweep_method(theta, dic_request[j], problem_data, dist_matrix, True)
             tot_routes += tot_route_request
         if j in dic_pickup.keys():
-            tot_route_pickup, available_count_pi = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
+            tot_route_pickup = sweep_method(theta, dic_pickup[j], problem_data, dist_matrix, False)
             tot_routes += tot_route_pickup
 
         solution.routes[j] = tot_routes
-
-        ###
-        available_tools_enough = {key: value + available_count_re.get(key, 0) for key, value in available_tools.items()}
-
-        found_negative = False
-        for key, value in available_tools_enough.items():
-            if -value in available_tools_enough.values():
-                found_negative = True
-                break
-
-        if found_negative:
-            print("yes")
-        available_tools = {key: value + available_count_pi.get(key, 0) for key, value in available_tools.items()}
-        ###
 
     return solution
 
@@ -54,10 +35,9 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
     routes = []
     i = 0
     tool_sizes = {tool.id: tool.size for tool in problem_data.tools}
-    available_tools = {tool.id: 0 for tool in problem_data.tools}
 
     while i < len(sort):
-        i, route = request_vs_pickup(i, sort, tool_sizes, problem_data, sgn) #, available_tools
+        i, route = request_vs_pickup(i, sort, tool_sizes, problem_data, sgn)
         test, routx = gurobi(route, problem_data, dist_matrix)
 
         while test == False:
@@ -68,30 +48,34 @@ def sweep_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix:
         route_ids = [0] + [r.id for r in routx] + [0]
         if not sgn:
             route_ids = [-i for i in route_ids]
-        for r in routx:
-            available_tools[r.tool_kind_id] += (-1) ** sgn * r.tools_needed
         routes.append(route_ids)
 
-    return routes, available_tools
+    return routes
 
 def request_vs_pickup(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemData, sgn: bool):
     fill = tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
     route = []
 
     while problem_data.capacity >= fill and i < len(sort):
-        route.append(sort[i])
-        fill += tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+        item = sort[i]
+        route.append(item)
+        fill += tool_sizes[item.tool_kind_id] * item.tools_needed
 
         i += 1
         if i >= len(sort):
             break
 
-        fill += tool_sizes.get(sort[i].tool_kind_id) * sort[i].tools_needed
+        fill += tool_sizes[sort[i].tool_kind_id] * sort[i].tools_needed
 
     return i, route
 
 def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
-    route_id_list, dup_dic = give_duplicates(route) #check
+    new = []
+    for i in route:
+        if i.location_id not in new:
+            new.append(i.location_id)
+    new.append(0)
+    route_id_list = new
 
     m = gp.Model('TSP')
 
@@ -114,7 +98,7 @@ def gurobi(route: list, problem_data: ProblemData, dist_matrix: np.ndarray):
 
     m.addConstrs(gp.quicksum(x[i, j] for j in range(n) if i != j) == 1 for i in range(n)) #every row is visit once
     m.addConstrs(gp.quicksum(x[i, j] for i in range(n) if i != j) == 1 for j in range(n)) #every column is visit once
-    m.addConstr(gp.quicksum(x[i, j] * reduced_dist_matrix[i][j] for i in range(n) for j in range(n) if i != j) <= problem_data.max_trip_distance) #max trip distance
+    m.addConstr(gp.quicksum(x[i, j] * reduced_dist_matrix[i][j] for i in range(n) for j in range(n) if i != j) <= problem_data.max_trip_distance)  # max trip distance
 
     # add the subtour elimination constraints
     u = m.addVars(n, vtype=GRB.CONTINUOUS, lb=0.0, name='u')
@@ -158,20 +142,6 @@ def compiler(tour_order: list, route: list):
         finish.append(x)
 
     return finish
-
-
-def give_duplicates(lst: list):
-    new = []
-    dub = {}
-    for i in lst:
-        if i.location_id not in new:
-            new.append(i.location_id)
-        elif i.location_id in dub.keys():
-            dub[new.index(i.location_id)].append(i)
-        else:
-            dub[new.index(i.location_id)] = [i]
-    new.append(0)
-    return new, dub
 
 def distance_matrix1(problem_data: ProblemData):
     x = problem_data.coordinates[:, 1]
