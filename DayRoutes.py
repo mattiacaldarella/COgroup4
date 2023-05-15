@@ -3,10 +3,10 @@ from problem import ProblemData, Request
 
 def day_divider2(problem_data: ProblemData):
     availability = {i.id : i.number_available for i in problem_data.tools}
-    total_availability = {i: availability.copy() for i in range(problem_data.days)}
+    total_availability = {i: availability.copy() for i in range(1, problem_data.days+1)} #
 
     sort = sorted(problem_data.requests, key=lambda request: (request.last_day, request.last_day - request.first_day))
-    dub = {i: [] for i in range(problem_data.days)}
+    dub = {i: [] for i in range(1, problem_data.days+1)}
     for i in sort:
         dub[i.first_day].append(i)
 
@@ -30,6 +30,9 @@ def day_divider2(problem_data: ProblemData):
     print(total_availability)
     dic_request_filtered = delete_empty_list_values(dic_request)
     dic_pickup_filtered = delete_empty_list_values(dic_pickup)
+
+    print(dic_request_filtered)
+    print(dic_pickup_filtered)
 
     return dic_request_filtered, dic_pickup_filtered
 

@@ -16,7 +16,7 @@ def optimize2(problem_data: ProblemData):
     theta = polar_order(problem_data)
     dist_matrix = distance_matrix1(problem_data)
 
-    exit()
+    #exit()
 
     available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
     for j in sorted(list(set(dic_request) | set(dic_pickup))):
