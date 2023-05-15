@@ -43,14 +43,11 @@ def delete_empty_list_values(dictionary):
 
 def tool_checker(request: Request, total_availability: dict, day: int):
     dic = total_availability[day].copy()
-    dic[request.tool_kind_id] += -1 * request.tools_needed
 
-    if dic[request.tool_kind_id] >= 0:
+    if dic[request.tool_kind_id] - request.tools_needed >= 0:
         return True
     else:
         return False
-
-
 
 def day_divider1(problem_data: ProblemData):
     dic_request = {}
