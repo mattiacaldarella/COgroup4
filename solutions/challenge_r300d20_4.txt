@@ -1,8 +1,8 @@
 DATASET = co2020 case challenge part
 NAME = vehicle days over tools over vehicles over distance with 300 requests over 20 days
 DAY = 1
-1 R 0 187 0
-2 R 0 141 0
+1 R 0 141 0
+2 R 0 187 0
 3 R 0 83 0
 4 R 0 251 0
 5 R 0 117 0
@@ -315,9 +315,9 @@ DAY = 10
 25 R 0 -273 0
 26 R 0 -96 0
 27 R 0 -85 -35 0
-28 R 0 -198 0
-29 R 0 -68 0
-30 R 0 -262 -105 0
+28 R 0 -68 0
+29 R 0 -198 -262 0
+30 R 0 -105 0
 31 R 0 -10 0
 32 R 0 -38 0
 33 R 0 -54 -166 0

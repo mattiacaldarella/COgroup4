@@ -2,7 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from problem import ProblemData
-from DayRoutes import day_divider1, day_divider
+from DayRoutes import day_divider1, day_divider, day_divider2
 from collections import defaultdict
 
 class Solution:
@@ -12,9 +12,11 @@ class Solution:
 def optimize2(problem_data: ProblemData):
     solution = Solution()
 
-    dic_request, dic_pickup = day_divider1(problem_data)
+    dic_request, dic_pickup = day_divider2(problem_data)
     theta = polar_order(problem_data)
     dist_matrix = distance_matrix1(problem_data)
+
+    exit()
 
     available_tools = {tool.id: tool.number_available for tool in problem_data.tools}
     for j in sorted(list(set(dic_request) | set(dic_pickup))):

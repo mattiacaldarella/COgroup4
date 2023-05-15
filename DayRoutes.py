@@ -1,11 +1,51 @@
 import numpy as np
-from problem import ProblemData
+from problem import ProblemData, Request
 
 def day_divider2(problem_data: ProblemData):
-    for request in sorted(problem_data.requests, key=lambda request: (-request.days_needed + heuristic_weight * request.last_day - request.first_day)):
+    availability = {i.id : i.number_available for i in problem_data.tools}
+    total_availability = {i: availability.copy() for i in range(problem_data.days)}
+
+    sort = sorted(problem_data.requests, key=lambda request: (request.last_day, request.last_day - request.first_day))
+    dub = {i: [] for i in range(problem_data.days)}
+    for i in sort:
+        dub[i.first_day].append(i)
+
+    dic_request = {i: [] for i in range(problem_data.days)}
+    dic_pickup = {i: [] for i in range(problem_data.days)}
+
+    for day_request in dub.keys():
+        for request in dub[day_request]:
+            enough_tools = tool_checker(request, total_availability, day_request)
+            if enough_tools == True:
+
+                dic_request[day_request] += [request]
+                dic_pickup[day_request + request.days_needed] += [request]
+
+                for days in range(request.days_needed):
+                    dic = total_availability[day_request + days]
+                    dic[request.tool_kind_id] += -1 * request.tools_needed
+            else:
+                dub[day_request + 1] = [request] + dub[day_request + 1]
+
+    print(total_availability)
+    dic_request_filtered = delete_empty_list_values(dic_request)
+    dic_pickup_filtered = delete_empty_list_values(dic_pickup)
+
+    return dic_request_filtered, dic_pickup_filtered
+
+def delete_empty_list_values(dictionary):
+    return {key: value for key, value in dictionary.items() if value != []}
+
+def tool_checker(request: Request, total_availability: dict, day: int):
+    dic = total_availability[day].copy()
+    dic[request.tool_kind_id] += -1 * request.tools_needed
+
+    if dic[request.tool_kind_id] >= 0:
+        return True
+    else:
+        return False
 
 
-    return dic_request, dic_pickup
 
 def day_divider1(problem_data: ProblemData):
     dic_request = {}
