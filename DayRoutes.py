@@ -5,13 +5,15 @@ def day_divider2(problem_data: ProblemData):
     availability = {i.id : i.number_available for i in problem_data.tools}
     total_availability = {i: availability.copy() for i in range(1, problem_data.days+1)} #
 
+    print(total_availability)
+
     sort = sorted(problem_data.requests, key=lambda request: (request.last_day, request.last_day - request.first_day))
     dub = {i: [] for i in range(1, problem_data.days+1)}
     for i in sort:
         dub[i.first_day].append(i)
 
-    dic_request = {i: [] for i in range(problem_data.days)}
-    dic_pickup = {i: [] for i in range(problem_data.days)}
+    dic_request = {i: [] for i in range(1,problem_data.days+1)}
+    dic_pickup = {i: [] for i in range(1,problem_data.days+1)}
 
     for day_request in dub.keys():
         for request in dub[day_request]:
@@ -23,7 +25,7 @@ def day_divider2(problem_data: ProblemData):
 
                 for days in range(request.days_needed):
                     dic = total_availability[day_request + days]
-                    dic[request.tool_kind_id] += -1 * request.tools_needed
+                    dic[request.tool_kind_id] -= request.tools_needed
             else:
                 dub[day_request + 1] = [request] + dub[day_request + 1]
 
