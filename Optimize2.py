@@ -2,7 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from problem import ProblemData
-from DayRoutes import day_divider1, day_divider, day_divider2
+from DayRoutes import day_divider2
 from collections import defaultdict
 
 class Solution:

@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     valid_solutions = []
     invalid_solutions = []
-    i = 0
+    #i = 0
     for file_name in os.listdir(INSTANCES_DIR):
         print(f"Reading {file_name}")
         problem_data = read_instance(os.path.join(INSTANCES_DIR, file_name))
@@ -32,8 +32,8 @@ if __name__ == "__main__":
             valid_solutions.append(file_name)
         else:
             invalid_solutions.append(file_name)
-        i += 1
-        if i > 1:
-            exit()
+        #i += 1
+        #if i > 1:
+            #exit()
     print(f"VALID SOLUTIONS ({len(valid_solutions)}): {valid_solutions} ")
     print(f"INVALID SOLUTIONS ({len(invalid_solutions)}): {invalid_solutions}")

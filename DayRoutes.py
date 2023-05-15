@@ -5,7 +5,7 @@ def day_divider2(problem_data: ProblemData):
     availability = {i.id : i.number_available for i in problem_data.tools}
     total_availability = {i: availability.copy() for i in range(1, problem_data.days+1)} #
 
-    print(total_availability)
+    #print(total_availability)
 
     sort = sorted(problem_data.requests, key=lambda request: (request.last_day, request.last_day - request.first_day))
     dub = {i: [] for i in range(1, problem_data.days+1)}
@@ -23,18 +23,16 @@ def day_divider2(problem_data: ProblemData):
                 dic_request[day_request] += [request]
                 dic_pickup[day_request + request.days_needed] += [request]
 
-                for days in range(request.days_needed):
+                for days in range(request.days_needed + 1): #Fix!!
                     dic = total_availability[day_request + days]
                     dic[request.tool_kind_id] -= request.tools_needed
             else:
+                request.first_day += 1 #mistake maybe here
                 dub[day_request + 1] = [request] + dub[day_request + 1]
 
-    print(total_availability)
     dic_request_filtered = delete_empty_list_values(dic_request)
     dic_pickup_filtered = delete_empty_list_values(dic_pickup)
-
-    print(dic_request_filtered)
-    print(dic_pickup_filtered)
+    #print(total_availability)
 
     return dic_request_filtered, dic_pickup_filtered
 
@@ -47,8 +45,10 @@ def tool_checker(request: Request, total_availability: dict, day: int):
     if dic[request.tool_kind_id] - request.tools_needed >= 0:
         return True
     else:
+        #print('yes')
         return False
 
+'''
 def day_divider1(problem_data: ProblemData):
     dic_request = {}
     dic_pickup = {}
@@ -82,3 +82,4 @@ def day_divider(problem_data: ProblemData):
         else:
             dic[fd] = [request]
     return dic
+'''
