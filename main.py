@@ -32,5 +32,6 @@ if __name__ == "__main__":
             valid_solutions.append(file_name)
         else:
             invalid_solutions.append(file_name)
+        #exit()
     print(f"VALID SOLUTIONS ({len(valid_solutions)}): {valid_solutions} ")
     print(f"INVALID SOLUTIONS ({len(invalid_solutions)}): {invalid_solutions}")
