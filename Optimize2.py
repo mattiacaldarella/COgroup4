@@ -2,7 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from problem import ProblemData
-from DayRoutes import day_divider
+from Optimize import get_dates
 from collections import defaultdict
 
 class Solution:
@@ -12,7 +12,7 @@ class Solution:
 def optimize(problem_data: ProblemData):
     solution = Solution()
 
-    dict_request, dict_pickup = day_divider(problem_data)
+    dict_request, dict_pickup = get_dates(problem_data)
     theta = polar_order(problem_data)
     dist_matrix = distance_matrix(problem_data)
 

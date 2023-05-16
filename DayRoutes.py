@@ -30,6 +30,8 @@ def day_divider(problem_data: ProblemData):
 
     dict_request_filtered = delete_empty_list_values(dict_request)
     dict_pickup_filtered = delete_empty_list_values(dict_pickup)
+    print(dict_request_filtered)
+    exit()
 
     return dict_request_filtered, dict_pickup_filtered
 

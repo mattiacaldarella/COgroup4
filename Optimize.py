@@ -7,8 +7,11 @@ class Solution:
         self.routes = defaultdict(list)  # { day: list of routes }
 
 
-def optimize(problem_data: ProblemData):
-    solution = Solution()
+def get_dates(problem_data: ProblemData):
+    # dict_request = {i: [] for i in range(1,problem_data.days+1)}
+    # dict_pickup = {i: [] for i in range(1,problem_data.days+1)}
+    dict_request = defaultdict(list)
+    dict_pickup = defaultdict(list)
 
     available_tools = {
         (day, tool.id): tool.number_available
@@ -36,19 +39,13 @@ def optimize(problem_data: ProblemData):
             check_day += 1
         return_day = deliver_day + request.days_needed
         # Dumb solution where every request gets its own vehicle for delivery and pickup
-        solution.routes[deliver_day].append([0, request.id, 0])
-        solution.routes[return_day].append([0, -request.id, 0])
+        dict_request[deliver_day].append(request)
+        dict_pickup[return_day].append(request)
+        # solution.routes[deliver_day].append([0, request.id, 0])
+        # solution.routes[return_day].append([0, -request.id, 0])
         for day in range(deliver_day, return_day+1):
             available_tools[(day, request.tool_kind_id)] -= request.tools_needed
 
-    # When returning a tool, send it directly to a customer who needs it instead
-    # for day in range(1, problem_data.days+1):
-    #     for route_a in solution.routes[day]:
-    #         for route_b in solution.routes[day]:
-    #             if route_a[1] < 0 and route_b[1] == -route_a[1]:  # and distance
-    #                 solution.routes[day].remove(route_a)
-    #                 solution.routes[day].remove(route_b)
-    #                 solution.routes[day].append([0, route_a[1], route_b[1], 0])
 
     print(available_tools)
-    return solution
+    return (dict_request, dict_pickup)
