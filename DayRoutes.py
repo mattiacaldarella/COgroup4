@@ -19,13 +19,13 @@ def day_divider(problem_data: ProblemData):
             if enough_tools == True:
 
                 dict_request[day_request] += [request]
-                dict_pickup[day_request + request.days_needed] += [request]
+                dict_pickup[day_request + request.days_needed] += [request] #mistake maybe here
 
                 for days in range(request.days_needed + 1): #Fix!!
                     dic = total_availability[day_request + days]
                     dic[request.tool_kind_id] -= request.tools_needed
             else:
-                request.first_day += 1 #mistake maybe here
+                request.first_day += 1 #Fix!!
                 dub[day_request + 1] = [request] + dub[day_request + 1]
 
     dict_request_filtered = delete_empty_list_values(dict_request)
@@ -43,39 +43,3 @@ def tool_checker(request: Request, total_availability: dict, day: int):
         return True
     else:
         return False
-
-'''
-def day_divider1(problem_data: ProblemData):
-    dic_request = {}
-    dic_pickup = {}
-    for request in problem_data.requests:
-        fd = request.first_day
-        if fd in dic_request.keys():
-            dic_request[fd].append(request)
-
-            deadline = fd + request.days_needed
-            if deadline in dic_pickup:
-                dic_pickup[deadline].append(request)
-            else:
-                dic_pickup[deadline] = [request]
-        else:
-            dic_request[fd] = [request]
-
-            deadline = fd + request.days_needed
-            if deadline in dic_pickup:
-                dic_pickup[deadline].append(request)
-            else:
-                dic_pickup[deadline] = [request]
-
-    return dic_request, dic_pickup
-
-def day_divider(problem_data: ProblemData):
-    dic = {}
-    for request in problem_data.requests:
-        fd = request.first_day
-        if fd in dic.keys():
-            dic[fd].append(request)
-        else:
-            dic[fd] = [request]
-    return dic
-'''
