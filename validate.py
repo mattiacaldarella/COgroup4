@@ -36,8 +36,8 @@ def write_cost(file_name, cost):
     # fields=['timestamp','instance','cost']
     with open(SCORES_FILE, 'a') as f:
         writer = csv.writer(f, delimiter="\t")
-        instance = file_name.split("_")[1]
-        description = "dumb day divider"  # FIXME
+        instance = file_name.split("challenge_")[1].split(".txt")[0]
+        description = "justday"
         timestamp = int(time.time())
         writer.writerow([description, timestamp, instance, cost])
 

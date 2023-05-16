@@ -13,7 +13,7 @@ class Solution:
 def optimize(problem_data: ProblemData):
     solution = Solution()
 
-    dict_request, dict_pickup = day_divider(problem_data) #get_dates
+    dict_request, dict_pickup = get_dates(problem_data) #get_dates
     theta = polar_order(problem_data)
     dist_matrix = distance_matrix(problem_data)
 

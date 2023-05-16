@@ -19,9 +19,9 @@ def get_dates(problem_data: ProblemData):
         for tool in problem_data.tools
     }
 
-    heuristic_weight = 40  # A value of 4 gives 19 valid sols, and this seems to be true for any higher value as well
+    heuristic_weight = 1  # A value of 4 gives 19 valid sols, and this seems to be true for any higher value as well
     for request in sorted(
-        problem_data.requests, key=lambda request: (-request.days_needed + heuristic_weight * request.last_day - request.first_day)
+        problem_data.requests, key=lambda request: (0 * -request.days_needed + heuristic_weight * request.last_day )
     ):
         # print(request)
         days_with_capacity = 0
