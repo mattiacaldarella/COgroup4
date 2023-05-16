@@ -4,8 +4,8 @@ import os
 
 from ReadInstance import read_instance
 from PlotCoordinates import *
-from Optimize2 import optimize2
-from Optimize import optimize
+#from Optimize import optimize
+from Optimize2 import optimize
 from WriteResults import write_results
 from validate import validate
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
         #print(problem_data)
         is_valid = False
         try:
-            solution = optimize2(problem_data)
+            solution = optimize(problem_data)
             write_results(file_name, problem_data, solution)
             is_valid = validate(file_name)
         except Exception as e:
