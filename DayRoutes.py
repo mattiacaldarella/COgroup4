@@ -14,7 +14,7 @@ def day_divider(problem_data: ProblemData):
     tool_sizes = {tool.id: tool.number_available / total for tool in problem_data.tools}
     #print(tool_sizes)
 
-    sort = sorted(problem_data.requests, key=lambda request: (request.last_day, -request.days_needed*tool_sizes[request.tool_kind_id])) #request.last_day - request.first_day
+    sort = sorted(problem_data.requests, key=lambda request: (request.last_day, -request.days_needed/tool_sizes[request.tool_kind_id])) #request.last_day - request.first_day
     dub = {i: [] for i in range(1, problem_data.days+1)}
     for i in sort:
         dub[i.first_day].append(i)
