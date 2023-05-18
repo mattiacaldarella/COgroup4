@@ -20,8 +20,9 @@ if __name__ == "__main__":
     invalid_solutions = []
 
     for file_name in os.listdir(INSTANCES_DIR):
-        t = TicToc()
-        t.tic()
+        #t = TicToc()
+        #t.tic()
+        #file_name = 'challenge_r500d25_2.txt'
         print(f"Reading {file_name}\n")
         problem_data = read_instance(os.path.join(INSTANCES_DIR, file_name))
         is_valid = False

@@ -6,6 +6,7 @@ from DayRoute2 import avail
 from problem import ProblemData
 from Optimize import get_dates
 from collections import defaultdict
+from pytictoc import TicToc
 
 class Solution:
     def __init__(self):
@@ -14,10 +15,20 @@ class Solution:
 def optimize(problem_data: ProblemData):
     solution = Solution()
 
+    t = TicToc()
+    t.tic()
     dict_request, dict_pickup = get_dates(problem_data) #get_dates
+    t.toc()
+
+    t = TicToc()
+    t.tic()
     theta = polar_order(problem_data)
+    t.toc()
+
     dist_matrix = distance_matrix(problem_data)
 
+    t = TicToc()
+    t.tic()
     for j in sorted(list(set(dict_request) | set(dict_pickup))):
         tot_routes = []
 
@@ -29,7 +40,7 @@ def optimize(problem_data: ProblemData):
             tot_routes += tot_route_pickup
 
         solution.routes[j] = tot_routes
-
+    t.toc()
     return solution
 
 def sweeping_method(theta: list, lst: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: bool):
@@ -120,6 +131,7 @@ def TSP(request_list: list, problem_data: ProblemData, dist_matrix: np.ndarray, 
         return True, route
     else:
         m.dispose()
+        print('yes')
         return False, None
 
 def compiler(route_order: list, request_list: list, sgn: bool):
