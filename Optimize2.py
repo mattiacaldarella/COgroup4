@@ -1,7 +1,8 @@
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-from DayRoutes import day_divider
+#from DayRoutes import day_divider
+from DayRoute2 import avail
 from problem import ProblemData
 from Optimize import get_dates
 from collections import defaultdict
@@ -61,6 +62,7 @@ def fill_capacity(i: int, sort: dict, tool_sizes: dict, problem_data: ProblemDat
         i += 1
     return i, request_list
 
+
 def TSP(request_list: list, problem_data: ProblemData, dist_matrix: np.ndarray, sgn: bool):
     new = []
     for i in request_list:
@@ -69,34 +71,34 @@ def TSP(request_list: list, problem_data: ProblemData, dist_matrix: np.ndarray, 
     new.append(0)
     route_id_list = new
 
-    m = gp.Model('TSP')
-
-    # set the model parameters to prevent output to the console
-    m.setParam('OutputFlag', 0)
-
-    # Create a boolean mask to select the relevant rows and columns
     mask = np.zeros(dist_matrix.shape, dtype=bool)
     mask[np.ix_(route_id_list, route_id_list)] = True
-
-    # Use the mask to select the relevant distances
     reduced_dist_matrix = dist_matrix[mask].reshape(len(route_id_list), len(route_id_list))
 
     n = len(route_id_list)
-    x = m.addVars(n, n, vtype=gp.GRB.BINARY, name='x')
+
+    m = gp.Model('TSP')
+    m.setParam('OutputFlag', 0)
+    x = m.addVars(n, n, vtype=gp.GRB.BINARY, name='x') # 1 if we drive from city i to city j, else 0
+    u = m.addVars(n, vtype=GRB.CONTINUOUS, lb=0.0, name='u') # Number of cities visited at city i
 
     obj = gp.quicksum(reduced_dist_matrix[i][j] * (problem_data.distance_cost) * x[i, j] for i in range(n) for j in range(n))
     m.setObjective(obj, gp.GRB.MINIMIZE)
 
-    m.addConstrs(gp.quicksum(x[i, j] for j in range(n) if i != j) == 1 for i in range(n)) #every row is visit once
-    m.addConstrs(gp.quicksum(x[i, j] for i in range(n) if i != j) == 1 for j in range(n)) #every column is visit once
+    #constraint enter each city once
+    m.addConstrs(gp.quicksum(x[i, j] for j in range(n) if i != j) == 1 for i in range(n))  # every row is visit once
+    m.addConstrs(gp.quicksum(x[i, j] for i in range(n) if i != j) == 1 for j in range(n))  # every column is visit once
+
     m.addConstr(gp.quicksum(x[i, j] * reduced_dist_matrix[i][j] for i in range(n) for j in range(n) if i != j) <= problem_data.max_trip_distance)  # max trip distance
 
     # add the subtour elimination constraints
-    u = m.addVars(n, vtype=GRB.CONTINUOUS, lb=0.0, name='u')
+
     for i in range(1, n):
         for j in range(1, n):
             if i != j:
                 m.addConstr(u[i] - u[j] + n * x[i, j] <= n - 1)
+    m.addConstr(u[0] == 1)
+
 
     m.optimize()
 
@@ -114,6 +116,7 @@ def TSP(request_list: list, problem_data: ProblemData, dist_matrix: np.ndarray, 
 
         route = compiler(route_order, request_list, sgn)
         m.dispose()
+
         return True, route
     else:
         m.dispose()
@@ -147,7 +150,7 @@ def distance_matrix(problem_data: ProblemData):
     return dist_matrix
 
 def sort_request(theta: list, lst: list):
-    theta1 = theta[[i.location_id for i in lst]]
+    theta1 = theta[[i.location_id - 1 for i in lst]]
     sorted_indices = np.argsort(theta1)
     sorted_lst = [lst[i] for i in sorted_indices]
 

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from problem import ProblemData
+from problem import ProblemData, Tool
 
 
 class Solution:
@@ -7,7 +7,12 @@ class Solution:
         self.routes = defaultdict(list)  # { day: list of routes }
 
 
-def get_dates(problem_data: ProblemData):
+def get_dates(problem_data: ProblemData, tool: Tool):
+    tool_requests = []
+    for request in problem_data.requests:
+        if request.tool_kind_id == tool.id:
+            tool_requests.append(request)
+
     dict_request = defaultdict(list)
     dict_pickup = defaultdict(list)
 
@@ -19,7 +24,7 @@ def get_dates(problem_data: ProblemData):
 
     heuristic_weight = 1  # A value of 4 gives 19 valid sols, and this seems to be true for any higher value as well
     for request in sorted(
-        problem_data.requests, key=lambda request: (request.last_day) #0 * -request.days_needed + heuristic_weight * request.last_day
+        tool_requests, key=lambda tool_request: (tool_request.tools_needed, tool_request.last_day) #, -tool_request.tools_needed 0 * -request.days_needed + heuristic_weight * request.last_day
     ):
         # print(request)
         days_with_capacity = 0
@@ -43,3 +48,18 @@ def get_dates(problem_data: ProblemData):
             available_tools[(day, request.tool_kind_id)] -= request.tools_needed
 
     return (dict_request, dict_pickup)
+
+def avail(problem_data: ProblemData):
+    dict_combined_re = {i: [] for i in range(problem_data.days)}
+    dict_combined_pi = {i: [] for i in range(problem_data.days)}
+
+    i = 0
+    for tool in problem_data.tools:
+        dict_re, dict_pi = get_dates(problem_data, tool)
+        dict_combined_re = {key: dict_combined_re[key] + dict_re[key] for key in dict_combined_re.keys() or dict_re.keys()}
+        dict_combined_pi = {key: dict_combined_pi[key] + dict_pi[key] for key in dict_combined_pi.keys() or dict_pi.keys()}
+
+    dict_combined_filtered_re = {k: v for k, v in dict_combined_re.items() if v}
+    dict_combined_filtered_pi = {k: v for k, v in dict_combined_pi.items() if v}
+
+    return dict_combined_filtered_re, dict_combined_filtered_pi

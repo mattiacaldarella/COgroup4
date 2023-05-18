@@ -28,7 +28,6 @@ def validate(file_name):
         print(line)
         if "Cost" in line:
             cost = re.findall(r'\d+', line)[0]
-            print(cost)
             write_cost(file_name, cost)
     return "correct" in str(result)
 
@@ -37,7 +36,7 @@ def write_cost(file_name, cost):
     with open(SCORES_FILE, 'a') as f:
         writer = csv.writer(f, delimiter="\t")
         instance = file_name.split("challenge_")[1].split(".txt")[0]
-        description = "justday"
+        description = "new1"
         timestamp = int(time.time())
         writer.writerow([description, timestamp, instance, cost])
 

@@ -5,14 +5,12 @@ from problem import ProblemData, Request
 def day_divider(problem_data: ProblemData):
     availability = {i.id : i.number_available for i in problem_data.tools}
     total_availability = {i: availability.copy() for i in range(1, problem_data.days+1)} #
-    #print(total_availability)
 
     total = 0
     for i in problem_data.tools:
         total += i.number_available
 
     tool_sizes = {tool.id: tool.number_available / total for tool in problem_data.tools}
-    #print(tool_sizes)
 
     sort = sorted(problem_data.requests, key=lambda request: (request.last_day, -request.days_needed/tool_sizes[request.tool_kind_id])) #request.last_day - request.first_day
     dub = {i: [] for i in range(1, problem_data.days+1)}
@@ -39,7 +37,7 @@ def day_divider(problem_data: ProblemData):
 
     dict_request_filtered = delete_empty_list_values(dict_request)
     dict_pickup_filtered = delete_empty_list_values(dict_pickup)
-    #exit()
+
     return dict_request_filtered, dict_pickup_filtered
 
 def delete_empty_list_values(dictionary):
